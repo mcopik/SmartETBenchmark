@@ -1,19 +1,27 @@
 BOOST_UBLAS_INCLUDE=/usr/include/
-#BOOST_UBLAS_LINK=/usr/lib/x86_64-linux-gnu/
-BOOST_UBLAS_CXXFLAGS=-I$(BOOST_UBLAS_INCLUDE)
-#BOOST_UBLAS_LDFLAGS="-L$(BOOST_UBLAS_LINK) -lboost_ublas
+BOOST_UBLAS_CXXFLAGS=-I$(BOOST_UBLAS_INCLUDE) -D NDEBUG -DBOOST_UBLAS_NDEBUG
 
-CXXFLAGS=-O3 -Wall -std=c++11 $(BOOST_UBLAS_CXXFLAGS)
+BLAS_INCLUDE=/opt/Intel/mkl/include
+BLAS_LINK=/opt/Intel/mkl/lib/intel64/
+BLAS_CXXFLAGS=-isystem $(BLAS_INCLUDE)
+BLAS_LDFLAGS=-L$(BLAS_LINK) -lmkl_intel_lp64 -lmkl_core -lmkl_sequential -lpthread
+
+BLAZE_INCLUDE=/home/mcopik/Projekty/RWTH/Seminar/blaze-2.3
+BLAZE_CXXFLAGS=-I$(BLAZE_INCLUDE)
+BLAZE_LINK=/home/mcopik/Projekty/RWTH/Seminar/blaze-2.3/lib
+BLAZE_LDFLAGS=-L$(BLAZE_LINK) -lblaze
+
+CXXFLAGS=-O3 -Wno-unused-local-typedefs -Wall -std=c++11 $(BOOST_UBLAS_CXXFLAGS) $(BLAZE_CXXFLAGS) $(BLAS_CXXFLAGS)
 CXX=g++
 SRCDIR=src
 SRCS=$(wildcard $(SRCDIR)/*.cpp)
 OBJS= $(SRCS:$(SRCDIR)/%.cpp=$(TARGET_DIR)/%.o)
-LDFLAGS="$(BOOST_UBLAS_LDFLAGS)"
+LDFLAGS=$(BOOST_UBLAS_LDFLAGS) $(BLAZE_LDFLAGS) $(BLAS_LDFLAGS)
 TARGET_DIR=bin
 TARGET=$(TARGET_DIR)/benchmark
 
 $(TARGET): $(TARGET_DIR) $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $(TARGET) $(OBJS) $(LIBS)
+	$(CXX) $(CXXFLAGS) -o $(TARGET) $(OBJS) $(LDFLAGS)
 
 all:    $(TARGET)
 

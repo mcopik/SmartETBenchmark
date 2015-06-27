@@ -1,9 +1,15 @@
 #include <random>
 #include <iostream>
-#include <chrono>
+#include <set>
 #include <cstddef>
 
 #include <boost/numeric/ublas/matrix.hpp>
+
+#include <blaze/math/DynamicMatrix.h>
+
+#include <mkl_cblas.h>
+
+#include "MatrixMul.h"
 
 template<class ForwardIt, class Generator>
 void initialize(ForwardIt first, ForwardIt last, Generator & gen)
@@ -12,18 +18,62 @@ void initialize(ForwardIt first, ForwardIt last, Generator & gen)
 	std::generate(first, last, [&] { return dis(gen); } );
 }
 
-std::chrono::milliseconds boost_ublas(uint32_t size)
+milliseconds MatrixMul::mult_blas(uint32_t size, std::mt19937 & gen)
 {
-	std::cout << "Test: boost uBLAS\n";
+	std::cout << "Test: BLAS ";
+	uint32_t elements_count = size*size;
+	double * A = new double[elements_count];
+	double * B = new double[elements_count];
+	double * C = new double[elements_count];
+
+	initialize(A, A + elements_count, gen);
+	initialize(B, B + elements_count, gen);
 
 	auto start = std::chrono::high_resolution_clock::now();
+	cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, size, size, size,
+				1.0, A, size, B, size, 0.0, C, size);
 	auto end = std::chrono::high_resolution_clock::now();
-        return std::chrono::duration_cast<std::chrono::milliseconds>( end - start);
+
+	auto time = std::chrono::duration_cast<std::chrono::milliseconds>( end - start);
+	std::cout << time.count() << std::endl;
+	return time;
 }
 
-std::chrono::milliseconds plain_call(uint32_t size)
+milliseconds MatrixMul::mult_blaze(uint32_t size, std::mt19937 & gen)
 {
-	std::cout << "Test: plain call\n";
+	std::cout << "Test: Blaze ";
+	blaze::DynamicMatrix<double, blaze::rowMajor> A(size, size), B(size, size), C(size,size);
+	initialize(A.data(), A.data() + size*size, gen);
+	initialize(B.data(), B.data() + size*size, gen);
+	auto start = std::chrono::high_resolution_clock::now();
+	C = A * B;
+	auto end = std::chrono::high_resolution_clock::now();
+
+	auto time = std::chrono::duration_cast<std::chrono::milliseconds>( end - start);
+	std::cout << time.count() << std::endl;
+	return time;
+}
+
+milliseconds MatrixMul::boost_ublas(uint32_t size, std::mt19937 & gen)
+{
+	std::cout << "Test: boost uBLAS ";
+	boost::numeric::ublas::matrix<double> A(size, size), B(size, size), C(size, size);
+	initialize(A.data().begin(), A.data().end(), gen);
+	initialize(B.data().begin(), B.data().end(), gen);
+
+	auto start = std::chrono::high_resolution_clock::now();
+	noalias(C) = prod( A, B );
+
+	auto end = std::chrono::high_resolution_clock::now();
+
+	auto time = std::chrono::duration_cast<std::chrono::milliseconds>( end - start);
+	std::cout << time.count() << std::endl;
+	return time;
+}
+
+milliseconds MatrixMul::plain_call(uint32_t size, std::mt19937 & gen)
+{
+	std::cout << "Test: plain call ";
 
 	uint32_t elements_count = size*size;
 	double * A = new double[elements_count];
@@ -33,11 +83,8 @@ std::chrono::milliseconds plain_call(uint32_t size)
 	/**
 		Initialize
 	**/
-	std::random_device rd;
-        std::mt19937 gen(rd());
 	initialize(A, A + elements_count, gen);
 	initialize(B, B + elements_count, gen);
-	initialize(C, C + elements_count, gen);
 
 	/**
 		Compute
@@ -63,25 +110,19 @@ std::chrono::milliseconds plain_call(uint32_t size)
 	delete[] B;
 	delete[] C;
 
-	return std::chrono::duration_cast<std::chrono::milliseconds>( end - start);
+	auto time = std::chrono::duration_cast<std::chrono::milliseconds>( end - start);
+	std::cout << time.count() << std::endl;
+	return time;
 }
 
-typedef std::chrono::milliseconds (*matrix_func)(uint32_t);
-
-int main(int argc, char ** argv)
+milliseconds MatrixMul::blitz(uint32_t size, std::mt19937 & gen)
 {
-	uint32_t matrix_size = 1000;
-	if( argc > 1 ) {
-		matrix_size = atoi( argv[1] );
-	}
+	std::cout << "Test: blitz++ ";
 
-	matrix_func functions[]{&boost_ublas, &plain_call};
-	size_t size = sizeof(functions)/sizeof(matrix_func);
+	auto start = std::chrono::high_resolution_clock::now();
+	auto end = std::chrono::high_resolution_clock::now();
 
-	for(size_t i = 0; i < size; ++i) {
-		std::cout << "Finished in: " << (*functions[i])(matrix_size).count() << " ms" << std::endl;
-	}
-
-
-	return 0;
+	auto time = std::chrono::duration_cast<std::chrono::milliseconds>( end - start);
+	std::cout << time.count() << std::endl;
+	return time;
 }
