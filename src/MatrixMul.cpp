@@ -2,6 +2,9 @@
 #include <iostream>
 #include <set>
 #include <cstddef>
+#include <cstdio>
+#include <cmath>
+#include <stdexcept>
 
 #include <boost/numeric/ublas/matrix.hpp>
 
@@ -20,25 +23,92 @@ void initialize(ForwardIt first, ForwardIt last, Generator & gen)
 	std::generate(first, last, [&] { return dis(gen); } );
 }
 
+template<class ForwardIt>
+void initialize(ForwardIt first, ForwardIt last, const std::string & file, const std::array<uint32_t,2> & sizes)
+{
+	FILE * _file = fopen(file.c_str(), "r");
+	if( !_file ) {
+		throw std::runtime_error("Fatal error! File " + file + " can't be opened\n");
+	}
+
+	double * matrix = new double[sizes[0] * sizes[1]];
+	size_t count = fread(matrix, sizeof(double), sizes[0] * sizes[1], _file);
+	assert( count == sizes[0] * sizes[1]);
+	fclose(_file);
+
+	int counter = 0;
+	std::generate(first, last, [&] { return matrix[counter++]; } );
+
+	delete[] matrix;
+}
+
+void verify_results(double * C)
+{
+	uint32_t m = MatrixMul::TEST_C_SIZE[0], l = MatrixMul::TEST_C_SIZE[1];
+	double * C_exp = new double[m*l];
+	initialize(C_exp, C_exp + m*l, MatrixMul::TEST_C, MatrixMul::TEST_C_SIZE);
+
+	for(uint32_t i = 0;i < m;++i) {
+		for(uint32_t j = 0;j < l;++j) {
+			uint32_t index = i*l + j;
+			if( fabs(C_exp[index] - C[index]) > DOUBLE_EPS ) {
+
+				printf("Position: (%d,%d), expected %f, got %f\n", i, j, C_exp[index],C[index]);
+				assert( false );
+			}
+		}
+	}
+
+	delete[] C_exp;
+}
+
 milliseconds MatrixMul::mult_blas(const Args & args, std::mt19937 & gen)
 {
 	std::cout << "Test: BLAS ";
 	const MatrixMulArgs & cur_args = dynamic_cast<const MatrixMulArgs&>(args);
-	uint32_t elements_count = cur_args.matrix_size * cur_args.matrix_size;
-	double * A = new double[elements_count];
-	double * B = new double[elements_count];
-	double * C = new double[elements_count];
+	uint32_t m, k, l;
+	if( args.test ) {
+		m = MatrixMul::TEST_A_SIZE[0];
+		k = MatrixMul::TEST_A_SIZE[1];
+		l = MatrixMul::TEST_B_SIZE[1];
+	} else {
+		m = cur_args.matrix_size;
+		k = cur_args.matrix_size;
+		l = cur_args.matrix_size;
+	}
 
-	initialize(A, A + elements_count, gen);
-	initialize(B, B + elements_count, gen);
+	double * A = new double[m * k];
+	double * B = new double[k * l];
+	double * C = new double[m * l];
+
+	if( args.test ) {
+
+		initialize(A, A + m*k, MatrixMul::TEST_A, MatrixMul::TEST_A_SIZE);
+		initialize(B, B + k*l, MatrixMul::TEST_B, MatrixMul::TEST_B_SIZE);
+
+	} else {
+
+		initialize(A, A + m*k, gen);
+		initialize(B, B + k*l, gen);
+
+	}
 
 	auto start = std::chrono::high_resolution_clock::now();
-	cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, cur_args.matrix_size, cur_args.matrix_size, cur_args.matrix_size,
-				1.0, A, cur_args.matrix_size, B, cur_args.matrix_size, 0.0, C, cur_args.matrix_size);
+	cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, l, k,
+				1.0, A, k, B, l, 0.0, C, l);
 	auto end = std::chrono::high_resolution_clock::now();
+
+	if( args.test ) {
+		verify_results(C);
+	}
 
 	auto time = std::chrono::duration_cast<std::chrono::milliseconds>( end - start);
 	std::cout << time.count() << std::endl;
+
+	delete[] A;
+	delete[] B;
+	delete[] C;
+
 	return time;
 }
 

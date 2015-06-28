@@ -11,9 +11,9 @@ BLAZE_CXXFLAGS=-I$(BLAZE_INCLUDE)
 BLAZE_LINK=/home/mcopik/Projekty/RWTH/Seminar/blaze-2.3/lib
 BLAZE_LDFLAGS=-L$(BLAZE_LINK) -lblaze
 
-BLITZ_INCLUDE=/home/mcopik/Projekty/RWTH/Seminar/blitz-0.10
+BLITZ_INCLUDE=/home/mcopik/Projekty/RWTH/Seminar/blitz_install/include
 BLITZ_CXXFLAGS=-I$(BLITZ_INCLUDE)
-BLITZ_LINK=/home/mcopik/Projekty/RWTH/Seminar/blitz-0.10/lib
+BLITZ_LINK=/home/mcopik/Projekty/RWTH/Seminar/blitz_install/lib
 BLITZ_LDFLAGS=-L$(BLITZ_LINK) -lblitz
 
 CXXFLAGS=-O3 -Wno-unused-local-typedefs -Wall -std=c++11 $(BOOST_UBLAS_CXXFLAGS) $(BLAZE_CXXFLAGS) $(BLAS_CXXFLAGS) $(BLITZ_CXXFLAGS)

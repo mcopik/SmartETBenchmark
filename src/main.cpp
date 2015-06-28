@@ -23,15 +23,71 @@
 
 typedef std::chrono::milliseconds (*matrix_func)(const Args &, std::mt19937 &);
 
-int main(int argc, char ** argv)
+int process_options(CMDOptions * opts, int argc, char ** argv)
 {
 
-	const size_t repeat_count = 10;
-	uint32_t matrix_size = 1000;
-	if( argc > 1 ) {
-		matrix_size = atoi( argv[1] );
+
+    struct option long_options[] =
+      {
+        /* These options set a flag. */
+        {"test", no_argument, (int*) &opts->test, 1},
+        {"verbose", no_argument, (int*) &opts->verbose, 1},
+        {"trashing", no_argument, (int*) &opts->trashing, 1},
+        /* These options don’t set a flag.
+           We distinguish them by their indices. */
+        {"matrix_size", required_argument, 0, 'm'},
+        {"repeat_count", required_argument, 0, 'r'},
+        {0, 0, 0, 0}
+      };
+
+	/**
+	 * Example of getopt usage:
+	 * http://www.gnu.org/software/libc/manual/html_node/Example-of-Getopt.html
+	 */
+	int c;
+    int option_index = 0;
+	while ( (c = getopt_long (argc, argv, "b:m:r", long_options, &option_index) ) != -1) {
+		switch (c)
+		{
+			case 0:
+			break;
+			case 'b':
+				opts->benchmark_case = atoi(optarg);
+			break;
+			case 'm':
+				opts->matrix_size = atoi(optarg);
+			break;
+			case 'r':
+				opts->repeat_count = atoi(optarg);
+			break;
+
+			default:
+				printf("%c\n", c);
+				return 1;
+		}
+	}
+	return 0;
+}
+
+int main(int argc, char ** argv)
+{
+	CMDOptions options{
+			.test = false,
+			.verbose = false,
+			.trashing = false,
+			.benchmark_case = 0,
+			.matrix_size = 1000,
+			.repeat_count = 10
+	};
+
+	if( process_options(&options, argc, argv) ) {
+		abort();
+		return 1;
 	}
 
+	if( options.test ) {
+		options.repeat_count = 1;
+	}
 
 	std::map<std::string, std::vector<matrix_func> > benchmark_functions{
 
@@ -41,7 +97,7 @@ int main(int argc, char ** argv)
 	};
 	std::map<std::string, std::shared_ptr<Args>> benchmark_args {
 
-		std::make_pair("Matrix Multiplication", std::shared_ptr<Args>(new MatrixMulArgs{matrix_size}) ),
+		std::make_pair("Matrix Multiplication", std::shared_ptr<Args>(new MatrixMulArgs{options.matrix_size, options.test}) ),
 
 	};
 	std::random_device rd;
@@ -57,14 +113,14 @@ int main(int argc, char ** argv)
 		std::cout << "Benchmark: " << (*benchmark).first << std::endl;
 
 		for(size_t i = 0; i < size; ++i) {
-			for(uint32_t j = 0; j < repeat_count; ++j) {
+			for(uint32_t j = 0; j < options.repeat_count; ++j) {
 				timings.push_back( (*benchmark).second[i]( *( (*benchmark_arg).second.get() ), gen).count() );
 			}
 
 			double mean = std::accumulate(timings.begin(), timings.end(), 0.0);
-			mean /= repeat_count;
-			std::nth_element(timings.begin(), std::next(timings.begin(), repeat_count), timings.end());
-			double median =  timings[repeat_count/2];
+			mean /= options.repeat_count;
+			std::nth_element(timings.begin(), std::next(timings.begin(), options.repeat_count), timings.end());
+			double median =  timings[options.repeat_count/2];
 			std::cout << "Avg: " << mean << " Median: " << median << std::endl;
 			timings.clear();
 		}
