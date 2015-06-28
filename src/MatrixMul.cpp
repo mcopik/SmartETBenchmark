@@ -33,7 +33,7 @@ void initialize(ForwardIt first, ForwardIt last, const std::string & file, const
 
 	double * matrix = new double[sizes[0] * sizes[1]];
 	size_t count = fread(matrix, sizeof(double), sizes[0] * sizes[1], _file);
-	assert( count == sizes[0] * sizes[1]);
+	assert( count == sizes[0] * sizes[1] );
 	fclose(_file);
 
 	int counter = 0;
@@ -42,32 +42,44 @@ void initialize(ForwardIt first, ForwardIt last, const std::string & file, const
 	delete[] matrix;
 }
 
-void verify_results(double * C)
+template<class ForwardIt>
+void verify_results(ForwardIt first, ForwardIt last)
 {
 	uint32_t m = MatrixMul::TEST_C_SIZE[0], l = MatrixMul::TEST_C_SIZE[1];
 	double * C_exp = new double[m*l];
 	initialize(C_exp, C_exp + m*l, MatrixMul::TEST_C, MatrixMul::TEST_C_SIZE);
 
-	for(uint32_t i = 0;i < m;++i) {
-		for(uint32_t j = 0;j < l;++j) {
+	uint32_t i = 0, j = 0;
+	for(;i < m;++i) {
+		for(j = 0;j < l;++j) {
 			uint32_t index = i*l + j;
-			if( fabs(C_exp[index] - C[index]) > DOUBLE_EPS ) {
+			if( fabs(*first - C_exp[index]) > DOUBLE_EPS ) {
 
-				printf("Position: (%d,%d), expected %f, got %f\n", i, j, C_exp[index],C[index]);
+				printf("Position: (%d,%d), expected %f, got %f\n", i, j, C_exp[index], *first);
 				assert( false );
 			}
+			++first;
+
+			if(first == last) {
+				break;
+			}
 		}
+	}
+
+	if(i != m || first != last) {
+
+		std::cout << "Size of computed matrix different than expected!" << std::endl;
+		delete[] C_exp;
+		assert( false );
+
 	}
 
 	delete[] C_exp;
 }
 
-milliseconds MatrixMul::mult_blas(const Args & args, std::mt19937 & gen)
+void get_matrix_sizes(const MatrixMulArgs & cur_args, uint32_t & m, uint32_t & k, uint32_t & l)
 {
-	std::cout << "Test: BLAS ";
-	const MatrixMulArgs & cur_args = dynamic_cast<const MatrixMulArgs&>(args);
-	uint32_t m, k, l;
-	if( args.test ) {
+	if( cur_args.test ) {
 		m = MatrixMul::TEST_A_SIZE[0];
 		k = MatrixMul::TEST_A_SIZE[1];
 		l = MatrixMul::TEST_B_SIZE[1];
@@ -76,22 +88,37 @@ milliseconds MatrixMul::mult_blas(const Args & args, std::mt19937 & gen)
 		k = cur_args.matrix_size;
 		l = cur_args.matrix_size;
 	}
+}
+
+template<class ForwardIt, class Generator>
+void initialize_matrices(ForwardIt firstA, ForwardIt lastA, ForwardIt firstB, ForwardIt lastB, Generator & gen, const MatrixMulArgs & args)
+{
+	if( args.test ) {
+
+		initialize(firstA, lastA, MatrixMul::TEST_A, MatrixMul::TEST_A_SIZE);
+		initialize(firstB, lastB, MatrixMul::TEST_B, MatrixMul::TEST_B_SIZE);
+
+	} else {
+
+		initialize(firstA, lastA, gen);
+		initialize(firstB, lastB, gen);
+
+	}
+}
+
+milliseconds MatrixMul::mult_blas(const Args & args, std::mt19937 & gen)
+{
+	std::cout << "Test: BLAS ";
+	const MatrixMulArgs & cur_args = dynamic_cast<const MatrixMulArgs&>(args);
+
+	uint32_t m, k, l;
+	get_matrix_sizes(cur_args, m, k, l);
 
 	double * A = new double[m * k];
 	double * B = new double[k * l];
 	double * C = new double[m * l];
 
-	if( args.test ) {
-
-		initialize(A, A + m*k, MatrixMul::TEST_A, MatrixMul::TEST_A_SIZE);
-		initialize(B, B + k*l, MatrixMul::TEST_B, MatrixMul::TEST_B_SIZE);
-
-	} else {
-
-		initialize(A, A + m*k, gen);
-		initialize(B, B + k*l, gen);
-
-	}
+	initialize_matrices(A, A + m*k, B, B + k*l, gen, cur_args);
 
 	auto start = std::chrono::high_resolution_clock::now();
 	cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, l, k,
@@ -99,7 +126,7 @@ milliseconds MatrixMul::mult_blas(const Args & args, std::mt19937 & gen)
 	auto end = std::chrono::high_resolution_clock::now();
 
 	if( args.test ) {
-		verify_results(C);
+		verify_results(C, C + m*l);
 	}
 
 	auto time = std::chrono::duration_cast<std::chrono::milliseconds>( end - start);
@@ -116,13 +143,19 @@ milliseconds MatrixMul::mult_blaze(const Args & args, std::mt19937 & gen)
 {
 	std::cout << "Test: Blaze ";
 	const MatrixMulArgs & cur_args = dynamic_cast<const MatrixMulArgs&>(args);
-	blaze::DynamicMatrix<double, blaze::rowMajor> A(cur_args.matrix_size, cur_args.matrix_size),
-			B(cur_args.matrix_size, cur_args.matrix_size), C(cur_args.matrix_size,cur_args.matrix_size);
-	initialize(A.data(), A.data() + cur_args.matrix_size*cur_args.matrix_size, gen);
-	initialize(B.data(), B.data() + cur_args.matrix_size*cur_args.matrix_size, gen);
+	uint32_t m, k, l;
+	get_matrix_sizes(cur_args, m, k, l);
+
+	blaze::DynamicMatrix<double, blaze::rowMajor> A(m, k), B(k, l), C(m, l);
+	initialize_matrices(A.data(), A.data() + m*k, B.data(), B.data() + k*l, gen, cur_args);
+
 	auto start = std::chrono::high_resolution_clock::now();
 	C = A * B;
 	auto end = std::chrono::high_resolution_clock::now();
+
+	if( args.test ) {
+		verify_results(C.data(), C.data() + m*l);
+	}
 
 	auto time = std::chrono::duration_cast<std::chrono::milliseconds>( end - start);
 	std::cout << time.count() << std::endl;
