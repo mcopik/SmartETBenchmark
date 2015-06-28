@@ -13,9 +13,13 @@
 #include <iostream>
 #include <memory>
 
+/**
+ * GNU C library.
+ */
+#include <getopt.h>
+
 #include "Args.h"
 #include "MatrixMul.h"
-#include "ManyMatrixMul.h"
 
 typedef std::chrono::milliseconds (*matrix_func)(const Args &, std::mt19937 &);
 
@@ -32,22 +36,19 @@ int main(int argc, char ** argv)
 	std::map<std::string, std::vector<matrix_func> > benchmark_functions{
 
 		std::make_pair< std::string, std::vector<matrix_func> >("Matrix Multiplication",
-				{&MatrixMul::boost_ublas, &MatrixMul::plain_call, &MatrixMul::mult_blaze, &MatrixMul::mult_blas}),
+				{&MatrixMul::boost_ublas, &MatrixMul::plain_call, &MatrixMul::mult_blaze, &MatrixMul::mult_blas, &MatrixMul::blitz}),
 
-		std::make_pair< std::string, std::vector<matrix_func> >("Many Matrix Multiplication",
-				{&ManyMatrixMul::mult_blas, &ManyMatrixMul::mult_blaze})
 	};
 	std::map<std::string, std::shared_ptr<Args>> benchmark_args {
 
 		std::make_pair("Matrix Multiplication", std::shared_ptr<Args>(new MatrixMulArgs{matrix_size}) ),
-		std::make_pair("Many Matrix Multiplication", std::shared_ptr<Args>(new ManyMatrixMulArgs{1000, 5000, 2000, 1000}) ),
 
 	};
 	std::random_device rd;
 	std::mt19937 gen(rd());
 
-	auto benchmark = benchmark_functions.begin()++;
-	auto benchmark_arg = benchmark_args.begin()++;
+	auto benchmark = benchmark_functions.begin();
+	auto benchmark_arg = benchmark_args.begin();
 
 	while( benchmark != benchmark_functions.end() ) {
 
@@ -65,6 +66,7 @@ int main(int argc, char ** argv)
 			std::nth_element(timings.begin(), std::next(timings.begin(), repeat_count), timings.end());
 			double median =  timings[repeat_count/2];
 			std::cout << "Avg: " << mean << " Median: " << median << std::endl;
+			timings.clear();
 		}
 
 		++benchmark, ++benchmark_arg;

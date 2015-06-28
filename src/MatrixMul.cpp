@@ -9,6 +9,8 @@
 
 #include <mkl_cblas.h>
 
+#include <blitz/array.h>
+
 #include "MatrixMul.h"
 
 template<class ForwardIt, class Generator>
@@ -125,7 +127,18 @@ milliseconds MatrixMul::blitz(const Args & args, std::mt19937 & gen)
 {
 	std::cout << "Test: blitz++ ";
 
+	const MatrixMulArgs & cur_args = dynamic_cast<const MatrixMulArgs&>(args);
+	blitz::Array<double, 2> C(cur_args.matrix_size, cur_args.matrix_size), B(cur_args.matrix_size, cur_args.matrix_size),
+			A(cur_args.matrix_size, cur_args.matrix_size);
+
+	initialize(A.begin(), A.end(), gen);
+	initialize(B.begin(), B.end(), gen);
+
 	auto start = std::chrono::high_resolution_clock::now();
+    blitz::firstIndex i;
+    blitz::secondIndex j;
+    blitz::thirdIndex k;
+    C = blitz::sum(A(i,k) * B(k,j), k);
 	auto end = std::chrono::high_resolution_clock::now();
 
 	auto time = std::chrono::duration_cast<std::chrono::milliseconds>( end - start);

@@ -18,15 +18,5 @@ public:
 	uint32_t matrix_size;
 };
 
-struct ManyMatrixMulArgs : public Args {
-public:
-	ManyMatrixMulArgs(uint32_t m_, uint32_t n_, uint32_t k_, uint32_t l_) :
-		m(m_), n(n_), k(k_), l(l_) {}
-	uint32_t m;
-	uint32_t n;
-	uint32_t k;
-	uint32_t l;
-};
-
 
 #endif /* SRC_ARGS_H_ */
