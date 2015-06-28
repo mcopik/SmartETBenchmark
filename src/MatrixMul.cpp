@@ -166,15 +166,19 @@ milliseconds MatrixMul::boost_ublas(const Args & args, std::mt19937 & gen)
 {
 	std::cout << "Test: boost uBLAS ";
 	const MatrixMulArgs & cur_args = dynamic_cast<const MatrixMulArgs&>(args);
-	boost::numeric::ublas::matrix<double> A(cur_args.matrix_size, cur_args.matrix_size),
-			B(cur_args.matrix_size, cur_args.matrix_size), C(cur_args.matrix_size, cur_args.matrix_size);
-	initialize(A.data().begin(), A.data().end(), gen);
-	initialize(B.data().begin(), B.data().end(), gen);
+	uint32_t m, k, l;
+	get_matrix_sizes(cur_args, m, k, l);
+
+	boost::numeric::ublas::matrix<double> A(m, k), B(k, l), C(m, l);
+	initialize_matrices(A.data().begin(), A.data().end(), B.data().begin(), B.data().end(), gen, cur_args);
 
 	auto start = std::chrono::high_resolution_clock::now();
 	noalias(C) = prod( A, B );
-
 	auto end = std::chrono::high_resolution_clock::now();
+
+	if( args.test ) {
+		verify_results(C.data().begin(), C.data().end());
+	}
 
 	auto time = std::chrono::duration_cast<std::chrono::milliseconds>( end - start);
 	std::cout << time.count() << std::endl;
@@ -186,36 +190,40 @@ milliseconds MatrixMul::plain_call(const Args & args, std::mt19937 & gen)
 	std::cout << "Test: plain call ";
 
 	const MatrixMulArgs & cur_args = dynamic_cast<const MatrixMulArgs&>(args);
-	uint32_t elements_count = cur_args.matrix_size*cur_args.matrix_size;
-	double * A = new double[elements_count];
-	double * B = new double[elements_count];
-	double * C = new double[elements_count];
+	uint32_t m, k, l;
+	get_matrix_sizes(cur_args, m, k, l);
+	double * A = new double[m*k];
+	double * B = new double[k*l];
+	double * C = new double[m*l];
 
 	/**
 		Initialize
 	**/
-	initialize(A, A + elements_count, gen);
-	initialize(B, B + elements_count, gen);
+	initialize_matrices(A, A + m*k, B, B + k*l, gen, cur_args);
 
 	/**
 		Compute
 	**/
 	auto start = std::chrono::high_resolution_clock::now();
 
-	for(uint32_t i = 0; i < cur_args.matrix_size;++i) {
+	for(uint32_t i = 0; i < m;++i) {
 
-		for(uint32_t k = 0; k < cur_args.matrix_size; ++k) {
-			C[i*cur_args.matrix_size + k] = A[i*cur_args.matrix_size] * B[k];
-                }
+		for(uint32_t n = 0; n < l; ++n) {
+			C[i*l + n] = A[i*k] * B[n];
+		}
 
-		for(uint32_t j = 1; j < cur_args.matrix_size; ++j) {
-			for(uint32_t k = 0; k < cur_args.matrix_size; ++k) {
-				C[i*cur_args.matrix_size + k] += A[i*cur_args.matrix_size + j] * B[j*cur_args.matrix_size + k];
+		for(uint32_t j = 1; j < k; ++j) {
+			for(uint32_t n = 0; n < l; ++n) {
+				C[i*l + n] += A[i*k + j] * B[j*l + n];
 			}
 		}
 	}
 
 	auto end = std::chrono::high_resolution_clock::now();
+
+	if( args.test ) {
+		verify_results(C, C + m*l);
+	}
 
 	delete[] A;
 	delete[] B;
