@@ -239,18 +239,22 @@ milliseconds MatrixMul::blitz(const Args & args, std::mt19937 & gen)
 	std::cout << "Test: blitz++ ";
 
 	const MatrixMulArgs & cur_args = dynamic_cast<const MatrixMulArgs&>(args);
-	blitz::Array<double, 2> C(cur_args.matrix_size, cur_args.matrix_size), B(cur_args.matrix_size, cur_args.matrix_size),
-			A(cur_args.matrix_size, cur_args.matrix_size);
+	uint32_t m, k, l;
+	get_matrix_sizes(cur_args, m, k, l);
 
-	initialize(A.begin(), A.end(), gen);
-	initialize(B.begin(), B.end(), gen);
+	blitz::Array<double, 2> C(m, l), B(k, l), A(m, k);
+	initialize_matrices(A.begin(), A.end(), B.begin(), B.end(), gen, cur_args);
 
 	auto start = std::chrono::high_resolution_clock::now();
     blitz::firstIndex i;
     blitz::secondIndex j;
-    blitz::thirdIndex k;
-    C = blitz::sum(A(i,k) * B(k,j), k);
+    blitz::thirdIndex n;
+    C = blitz::sum(A(i,n) * B(n,j), n);
 	auto end = std::chrono::high_resolution_clock::now();
+
+	if( args.test ) {
+		verify_results(C.begin(), C.end());
+	}
 
 	auto time = std::chrono::duration_cast<std::chrono::milliseconds>( end - start);
 	std::cout << time.count() << std::endl;
