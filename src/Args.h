@@ -31,5 +31,11 @@ struct MatrixMulArgs : public Args {
 
 };
 
+struct NestedExprArgs : public Args {
+	NestedExprArgs(uint32_t matrix_size_, bool test_) : Args(test_), matrix_size(matrix_size_){}
+	uint32_t matrix_size;
+
+};
+
 
 #endif /* SRC_ARGS_H_ */

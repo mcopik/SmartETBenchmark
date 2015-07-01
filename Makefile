@@ -12,16 +12,24 @@ BLAZE_LINK=/home/mcopik/Projekty/RWTH/Seminar/blaze-2.3/lib
 BLAZE_LDFLAGS=-L$(BLAZE_LINK) -lblaze
 
 BLITZ_INCLUDE=/home/mcopik/Projekty/RWTH/Seminar/blitz_install/include
+BLITZ_INCLUDE_ICC=/home/mcopik/Projekty/RWTH/Seminar/blitz_icc/include
 BLITZ_CXXFLAGS=-I$(BLITZ_INCLUDE)
-BLITZ_LINK=/home/mcopik/Projekty/RWTH/Seminar/blitz_install/lib
-BLITZ_LDFLAGS=-L$(BLITZ_LINK) -lblitz
+BLITZ_CXXFLAGS_ICC=-I$(BLITZ_INCLUDE_ICC)
 
-CXXFLAGS=-O3 -Wno-unused-local-typedefs -Wall -std=c++11 $(BOOST_UBLAS_CXXFLAGS) $(BLAZE_CXXFLAGS) $(BLAS_CXXFLAGS) $(BLITZ_CXXFLAGS)
-CXX=g++
+BLITZ_LINK=/home/mcopik/Projekty/RWTH/Seminar/blitz_install/lib
+BLITZ_LINK_ICC=/home/mcopik/Projekty/RWTH/Seminar/blitz_icc/lib
+BLITZ_LDFLAGS=-L$(BLITZ_LINK) -lblitz
+BLITZ_LDFLAGS_ICC=-L$(BLITZ_LINK_ICC) -lblitz
+
+#CXXFLAGS=-O3 -Wno-unused-local-typedefs -Wall -std=c++11 $(BOOST_UBLAS_CXXFLAGS) $(BLAZE_CXXFLAGS) $(BLAS_CXXFLAGS) $(BLITZ_CXXFLAGS)
+CXXFLAGS=-O3 -mtune=core-avx2 -inline-forceinline  -Wall -std=c++11 $(BOOST_UBLAS_CXXFLAGS) $(BLAZE_CXXFLAGS) $(BLAS_CXXFLAGS) $(BLITZ_CXXFLAGS_ICC)
+#CXX=g++
+CXX=icc
 SRCDIR=src
 SRCS=$(wildcard $(SRCDIR)/*.cpp)
 OBJS= $(SRCS:$(SRCDIR)/%.cpp=$(TARGET_DIR)/%.o)
-LDFLAGS=$(BOOST_UBLAS_LDFLAGS) $(BLAZE_LDFLAGS) $(BLAS_LDFLAGS) $(BLITZ_LDFLAGS)
+#LDFLAGS=$(BOOST_UBLAS_LDFLAGS) $(BLAZE_LDFLAGS) $(BLAS_LDFLAGS) $(BLITZ_LDFLAGS)
+LDFLAGS=$(BOOST_UBLAS_LDFLAGS) $(BLAZE_LDFLAGS) $(BLAS_LDFLAGS) $(BLITZ_LDFLAGS_ICC) -fopenmp
 TARGET_DIR=bin
 TARGET=$(TARGET_DIR)/benchmark
 
