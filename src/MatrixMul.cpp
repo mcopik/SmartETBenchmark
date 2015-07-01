@@ -106,7 +106,7 @@ void initialize_matrices(ForwardIt firstA, ForwardIt lastA, ForwardIt firstB, Fo
 	}
 }
 
-milliseconds MatrixMul::mult_blas(const Args & args, std::mt19937 & gen)
+microseconds MatrixMul::mult_blas(const Args & args, std::mt19937 & gen)
 {
 	std::cout << "Test: BLAS ";
 	const MatrixMulArgs & cur_args = dynamic_cast<const MatrixMulArgs&>(args);
@@ -129,7 +129,7 @@ milliseconds MatrixMul::mult_blas(const Args & args, std::mt19937 & gen)
 		verify_results(C, C + m*l);
 	}
 
-	auto time = std::chrono::duration_cast<std::chrono::milliseconds>( end - start);
+	auto time = std::chrono::duration_cast<std::chrono::microseconds>( end - start);
 	std::cout << time.count() << std::endl;
 
 	delete[] A;
@@ -139,7 +139,7 @@ milliseconds MatrixMul::mult_blas(const Args & args, std::mt19937 & gen)
 	return time;
 }
 
-milliseconds MatrixMul::mult_blaze(const Args & args, std::mt19937 & gen)
+microseconds MatrixMul::mult_blaze(const Args & args, std::mt19937 & gen)
 {
 	std::cout << "Test: Blaze ";
 	const MatrixMulArgs & cur_args = dynamic_cast<const MatrixMulArgs&>(args);
@@ -157,12 +157,12 @@ milliseconds MatrixMul::mult_blaze(const Args & args, std::mt19937 & gen)
 		verify_results(C.data(), C.data() + m*l);
 	}
 
-	auto time = std::chrono::duration_cast<std::chrono::milliseconds>( end - start);
+	auto time = std::chrono::duration_cast<std::chrono::microseconds>( end - start);
 	std::cout << time.count() << std::endl;
 	return time;
 }
 
-milliseconds MatrixMul::boost_ublas(const Args & args, std::mt19937 & gen)
+microseconds MatrixMul::boost_ublas(const Args & args, std::mt19937 & gen)
 {
 	std::cout << "Test: boost uBLAS ";
 	const MatrixMulArgs & cur_args = dynamic_cast<const MatrixMulArgs&>(args);
@@ -180,12 +180,12 @@ milliseconds MatrixMul::boost_ublas(const Args & args, std::mt19937 & gen)
 		verify_results(C.data().begin(), C.data().end());
 	}
 
-	auto time = std::chrono::duration_cast<std::chrono::milliseconds>( end - start);
+	auto time = std::chrono::duration_cast<std::chrono::microseconds>( end - start);
 	std::cout << time.count() << std::endl;
 	return time;
 }
 
-milliseconds MatrixMul::plain_call(const Args & args, std::mt19937 & gen)
+microseconds MatrixMul::plain_call(const Args & args, std::mt19937 & gen)
 {
 	std::cout << "Test: plain call ";
 
@@ -229,12 +229,12 @@ milliseconds MatrixMul::plain_call(const Args & args, std::mt19937 & gen)
 	delete[] B;
 	delete[] C;
 
-	auto time = std::chrono::duration_cast<std::chrono::milliseconds>( end - start);
+	auto time = std::chrono::duration_cast<std::chrono::microseconds>( end - start);
 	std::cout << time.count() << std::endl;
 	return time;
 }
 
-milliseconds MatrixMul::blitz(const Args & args, std::mt19937 & gen)
+microseconds MatrixMul::blitz(const Args & args, std::mt19937 & gen)
 {
 	std::cout << "Test: blitz++ ";
 
@@ -256,7 +256,7 @@ milliseconds MatrixMul::blitz(const Args & args, std::mt19937 & gen)
 		verify_results(C.begin(), C.end());
 	}
 
-	auto time = std::chrono::duration_cast<std::chrono::milliseconds>( end - start);
+	auto time = std::chrono::duration_cast<std::chrono::microseconds>( end - start);
 	std::cout << time.count() << std::endl;
 	return time;
 }

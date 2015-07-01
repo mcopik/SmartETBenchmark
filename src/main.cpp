@@ -23,7 +23,7 @@
 #include "NestedExpr.h"
 #include "Rearrangement.h"
 
-typedef std::chrono::milliseconds (*matrix_func)(const Args &, std::mt19937 &);
+typedef std::chrono::microseconds (*matrix_func)(const Args &, std::mt19937 &);
 
 int process_options(CMDOptions * opts, int argc, char ** argv)
 {
@@ -100,7 +100,7 @@ int main(int argc, char ** argv)
 		//		{&NestedExpr::mult_blas, &NestedExpr::mult_blaze, &NestedExpr::boost_ublas, &NestedExpr::plain_call, &NestedExpr::blitz}),
 
 		std::make_pair< std::string, std::vector<matrix_func> >("Rearrangement",
-				{&Rearrangement::mult_blas, &Rearrangement::mult_blaze, &Rearrangement::boost_ublas, &Rearrangement::plain_call, &Rearrangement::blitz})
+				{&Rearrangement::mult_blas, &Rearrangement::mult_blaze, &Rearrangement::mult_blaze_explicit, &Rearrangement::boost_ublas, &Rearrangement::plain_call, &Rearrangement::blitz})
 
 	};
 	std::map<std::string, std::shared_ptr<Args>> benchmark_args {

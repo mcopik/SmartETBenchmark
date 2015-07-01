@@ -14,7 +14,7 @@
 
 #define DOUBLE_EPS 1e-6
 
-using std::chrono::milliseconds;
+using std::chrono::microseconds;
 
 namespace MatrixMul {
 
@@ -26,15 +26,15 @@ namespace MatrixMul {
 	static const std::array<uint32_t,2> TEST_C_SIZE{2000, 1500};
 	static const std::string TEST_C{"test/test_data_2000_1500_C"};
 
-	milliseconds mult_blas(const Args & args, std::mt19937 & gen);
+	microseconds mult_blas(const Args & args, std::mt19937 & gen);
 
-	milliseconds mult_blaze(const Args & args, std::mt19937 & gen);
+	microseconds mult_blaze(const Args & args, std::mt19937 & gen);
 
-	milliseconds plain_call(const Args & args, std::mt19937 & gen);
+	microseconds plain_call(const Args & args, std::mt19937 & gen);
 
-	milliseconds boost_ublas(const Args & args, std::mt19937 & gen);
+	microseconds boost_ublas(const Args & args, std::mt19937 & gen);
 
-	milliseconds blitz(const Args & args, std::mt19937 & gen);
+	microseconds blitz(const Args & args, std::mt19937 & gen);
 }
 
 
