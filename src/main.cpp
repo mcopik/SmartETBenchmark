@@ -96,7 +96,7 @@ int main(int argc, char ** argv)
 		//		{&MatrixMul::boost_ublas, &MatrixMul::plain_call, &MatrixMul::mult_blaze, &MatrixMul::mult_blas, &MatrixMul::blitz}),
 
 		std::make_pair< std::string, std::vector<matrix_func> >("Nested Expressions",
-				{&NestedExpr::mult_blas, &NestedExpr::mult_blaze})
+				{&NestedExpr::mult_blas, &NestedExpr::mult_blaze, &NestedExpr::boost_ublas, &NestedExpr::plain_call, &NestedExpr::blitz})
 
 	};
 	std::map<std::string, std::shared_ptr<Args>> benchmark_args {
@@ -124,7 +124,7 @@ int main(int argc, char ** argv)
 
 			double mean = std::accumulate(timings.begin(), timings.end(), 0.0);
 			mean /= options.repeat_count;
-			std::nth_element(timings.begin(), std::next(timings.begin(), options.repeat_count), timings.end());
+			std::nth_element(timings.begin(), std::next(timings.begin(), options.repeat_count/2), timings.end());
 			double median =  timings[options.repeat_count/2];
 			std::cout << "Avg: " << mean << " Median: " << median << std::endl;
 			timings.clear();
