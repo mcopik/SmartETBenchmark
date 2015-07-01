@@ -21,6 +21,7 @@
 #include "Args.h"
 #include "MatrixMul.h"
 #include "NestedExpr.h"
+#include "Rearrangement.h"
 
 typedef std::chrono::milliseconds (*matrix_func)(const Args &, std::mt19937 &);
 
@@ -95,14 +96,18 @@ int main(int argc, char ** argv)
 		//std::make_pair< std::string, std::vector<matrix_func> >("Matrix Multiplication",
 		//		{&MatrixMul::boost_ublas, &MatrixMul::plain_call, &MatrixMul::mult_blaze, &MatrixMul::mult_blas, &MatrixMul::blitz}),
 
-		std::make_pair< std::string, std::vector<matrix_func> >("Nested Expressions",
-				{&NestedExpr::mult_blas, &NestedExpr::mult_blaze, &NestedExpr::boost_ublas, &NestedExpr::plain_call, &NestedExpr::blitz})
+		//std::make_pair< std::string, std::vector<matrix_func> >("Nested Expressions",
+		//		{&NestedExpr::mult_blas, &NestedExpr::mult_blaze, &NestedExpr::boost_ublas, &NestedExpr::plain_call, &NestedExpr::blitz}),
+
+		std::make_pair< std::string, std::vector<matrix_func> >("Rearrangement",
+				{&Rearrangement::mult_blas, &Rearrangement::mult_blaze, &Rearrangement::boost_ublas, &Rearrangement::plain_call, &Rearrangement::blitz})
 
 	};
 	std::map<std::string, std::shared_ptr<Args>> benchmark_args {
 
 		//std::make_pair("Matrix Multiplication", std::shared_ptr<Args>(new MatrixMulArgs{options.matrix_size, options.test}) ),
-		std::make_pair("Nested Expressions", std::shared_ptr<Args>(new NestedExprArgs{options.matrix_size, options.test}) ),
+		//std::make_pair("Nested Expressions", std::shared_ptr<Args>(new NestedExprArgs{options.matrix_size, options.test}) ),
+		std::make_pair("Rearrangement", std::shared_ptr<Args>(new RearrangementArgs{options.matrix_size, options.matrix_size, options.test}) ),
 
 	};
 	std::random_device rd;

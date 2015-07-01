@@ -37,5 +37,13 @@ struct NestedExprArgs : public Args {
 
 };
 
+struct RearrangementArgs : public Args {
+	RearrangementArgs(uint32_t matrix_size_, uint32_t vector_size_, bool test_) : Args(test_), matrix_size(matrix_size_),
+			vector_size( vector_size_ ) {}
+	uint32_t matrix_size;
+	uint32_t vector_size;
+
+};
+
 
 #endif /* SRC_ARGS_H_ */
