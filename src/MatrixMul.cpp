@@ -16,12 +16,7 @@
 
 #include "MatrixMul.h"
 
-template<class ForwardIt, class Generator>
-void initialize(ForwardIt first, ForwardIt last, Generator & gen)
-{
-	std::uniform_real_distribution<> dis(0, 10);
-	std::generate(first, last, [&] { return dis(gen); } );
-}
+
 
 template<class ForwardIt>
 void initialize(ForwardIt first, ForwardIt last, const std::string & file, const std::array<uint32_t,2> & sizes)
@@ -100,8 +95,8 @@ void initialize_matrices(ForwardIt firstA, ForwardIt lastA, ForwardIt firstB, Fo
 
 	} else {
 
-		initialize(firstA, lastA, gen);
-		initialize(firstB, lastB, gen);
+		MatrixMul::initialize(firstA, lastA, gen);
+		MatrixMul::initialize(firstB, lastB, gen);
 
 	}
 }
@@ -233,6 +228,45 @@ microseconds MatrixMul::plain_call(const Args & args, std::mt19937 & gen)
 	std::cout << time.count() << std::endl;
 	return time;
 }
+
+
+microseconds MatrixMul::op_overl(const Args & args, std::mt19937 & gen)
+{
+	std::cout << "Test: operator overloading ";
+
+	const MatrixMulArgs & cur_args = dynamic_cast<const MatrixMulArgs&>(args);
+	uint32_t m, k, l;
+	get_matrix_sizes(cur_args, m, k, l);
+
+	MatrixMul::Matrix<double> A(m,k), B(k,l), C(m,l);
+
+	/**
+		Initialize
+	**/
+	initialize_matrices(A.data, A.data + m*k, B.data, B.data + k*l, gen, cur_args);
+
+	/**
+		Compute
+	**/
+	auto start = std::chrono::high_resolution_clock::now();
+
+	C = A*B;
+
+	auto end = std::chrono::high_resolution_clock::now();
+
+	/*if( args.test ) {
+		verify_results(C, C + m*l);
+	}
+
+	delete[] A;
+	delete[] B;
+	delete[] C;*/
+
+	auto time = std::chrono::duration_cast<std::chrono::microseconds>( end - start);
+	std::cout << time.count() << std::endl;
+	return time;
+}
+
 
 microseconds MatrixMul::blitz(const Args & args, std::mt19937 & gen)
 {

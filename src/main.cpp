@@ -22,6 +22,7 @@
 #include "MatrixMul.h"
 #include "NestedExpr.h"
 #include "Rearrangement.h"
+#include "Sparse.h"
 
 typedef std::chrono::microseconds (*matrix_func)(const Args &, std::mt19937 &);
 
@@ -91,51 +92,54 @@ int main(int argc, char ** argv)
 		options.repeat_count = 1;
 	}
 
-	std::map<std::string, std::vector<matrix_func> > benchmark_functions{
+	std::string benchmark_names[] = {
+			"Matrix Multiplication",
+			"Nested Expressions",
+			"Rearrangement",
+			"Sparse"
+	};
 
-		//std::make_pair< std::string, std::vector<matrix_func> >("Matrix Multiplication",
-		//		{&MatrixMul::boost_ublas, &MatrixMul::plain_call, &MatrixMul::mult_blaze, &MatrixMul::mult_blas, &MatrixMul::blitz}),
+	std::vector< std::vector<matrix_func> > benchmark_functions{
 
-		//std::make_pair< std::string, std::vector<matrix_func> >("Nested Expressions",
-		//		{&NestedExpr::mult_blas, &NestedExpr::mult_blaze, &NestedExpr::boost_ublas, &NestedExpr::plain_call, &NestedExpr::blitz}),
+		{&MatrixMul::op_overl, &MatrixMul::boost_ublas, &MatrixMul::plain_call, &MatrixMul::mult_blaze, &MatrixMul::mult_blas, &MatrixMul::blitz},
 
-		std::make_pair< std::string, std::vector<matrix_func> >("Rearrangement",
-				{&Rearrangement::mult_blas, &Rearrangement::mult_blaze, &Rearrangement::mult_blaze_explicit, &Rearrangement::boost_ublas, &Rearrangement::plain_call, &Rearrangement::blitz})
+		{&NestedExpr::mult_blas, &NestedExpr::mult_blaze, &NestedExpr::plain_call, &NestedExpr::blitz, &NestedExpr::boost_ublas },
+
+		{&Rearrangement::mult_blas, &Rearrangement::mult_blaze, &Rearrangement::mult_blaze_explicit, &Rearrangement::boost_ublas},
+
+		{&Sparse::blaze, &Sparse::boost_ublas}
 
 	};
-	std::map<std::string, std::shared_ptr<Args>> benchmark_args {
 
-		//std::make_pair("Matrix Multiplication", std::shared_ptr<Args>(new MatrixMulArgs{options.matrix_size, options.test}) ),
-		//std::make_pair("Nested Expressions", std::shared_ptr<Args>(new NestedExprArgs{options.matrix_size, options.test}) ),
-		std::make_pair("Rearrangement", std::shared_ptr<Args>(new RearrangementArgs{options.matrix_size, options.matrix_size, options.test}) ),
+	std::vector< std::shared_ptr<Args> > benchmark_args {
+
+		std::shared_ptr<Args>(new MatrixMulArgs{options.matrix_size, options.test}),
+		std::shared_ptr<Args>(new NestedExprArgs{options.matrix_size, options.test}),
+		std::shared_ptr<Args>(new RearrangementArgs{options.matrix_size, options.matrix_size, options.test}),
+		std::shared_ptr<Args>(new SparseArgs{options.matrix_size, options.test})
 
 	};
 	std::random_device rd;
 	std::mt19937 gen(rd());
 
-	auto benchmark = benchmark_functions.begin();
-	auto benchmark_arg = benchmark_args.begin();
+	auto benchmark = benchmark_functions[options.benchmark_case];
+	auto benchmark_arg = benchmark_args[options.benchmark_case];
 
-	while( benchmark != benchmark_functions.end() ) {
+	size_t size = benchmark.size();
+	std::vector<int64_t> timings;
+	std::cout << "Benchmark: " << benchmark_names[options.benchmark_case] << std::endl;
 
-		size_t size = (*benchmark).second.size();
-		std::vector<int64_t> timings;
-		std::cout << "Benchmark: " << (*benchmark).first << std::endl;
-
-		for(size_t i = 0; i < size; ++i) {
-			for(uint32_t j = 0; j < options.repeat_count; ++j) {
-				timings.push_back( (*benchmark).second[i]( *( (*benchmark_arg).second.get() ), gen).count() );
-			}
-
-			double mean = std::accumulate(timings.begin(), timings.end(), 0.0);
-			mean /= options.repeat_count;
-			std::nth_element(timings.begin(), std::next(timings.begin(), options.repeat_count/2), timings.end());
-			double median =  timings[options.repeat_count/2];
-			std::cout << "Avg: " << mean << " Median: " << median << std::endl;
-			timings.clear();
+	for(size_t i = 0; i < size; ++i) {
+		for(uint32_t j = 0; j < options.repeat_count; ++j) {
+			timings.push_back( benchmark[i]( *( benchmark_arg.get() ), gen).count() );
 		}
 
-		++benchmark, ++benchmark_arg;
+		double mean = std::accumulate(timings.begin(), timings.end(), 0.0);
+		mean /= options.repeat_count;
+		std::nth_element(timings.begin(), std::next(timings.begin(), options.repeat_count/2), timings.end());
+		double median =  timings[options.repeat_count/2];
+		std::cout << "Avg: " << mean << " Median: " << median << std::endl;
+		timings.clear();
 	}
 
 	return 0;
